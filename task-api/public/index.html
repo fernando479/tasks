@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Lista de Tareas</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    ul { list-style: none; padding: 0; }
+    li { padding: 8px 12px; margin: 5px 0; background: #eee; border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <h1>Tareas</h1>
+  <ul id="taskList"></ul>
+
+  <script>
+    const socket = io();
+    const taskList = document.getElementById('taskList');
+
+    fetch('/tasks')
+      .then(res => res.json())
+      .then(tasks => {
+        tasks.forEach(task => agregarTarea(task));
+      });
+
+    function agregarTarea(task) {
+      const li = document.createElement('li');
+      li.id = 'task-' + task.id;
+      li.textContent = task.titulo + ' (id: ' + task.id + ') - Estado: ' + task.status;
+      taskList.appendChild(li);
+    }
+
+    socket.on('taskDeleted', ({ id }) => {
+      const item = document.getElementById('task-' + id);
+      if (item) item.remove();
+    });
+
+    socket.on('newTask', task => {
+      agregarTarea(task);
+    });
+
+    socket.on('taskUpdated', ({ id, status }) => {
+      const item = document.getElementById('task-' + id);
+      if (item) {
+        item.textContent = item.textContent.replace(/Estado: .+/, 'Estado: ' + status);
+      }
+    });
+  </script>
+</body>
+</html>
